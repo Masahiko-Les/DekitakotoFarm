@@ -120,15 +120,58 @@
 | サインインが必要 | いいえ |
 | 連絡先 | （氏名・電話番号・メールアドレス） |
 
-### メモ（審査担当者向け・英語）
+### メモ（審査担当者向け・英語で入力）
 
 ```
 Thank you for reviewing Dekitakoto Farm.
 
-- No account, no login, and no network access. All data (the short notes the user writes) is stored only on the device with SQLite. The app collects no data.
-- How to use: swipe on the map to walk the character. Stand on grass or a field and tap the A button to plant a "seed" (a short note about something you did today). Stand on the seed and tap A, then "💧 水やりする" to water it.
-- By design, each seed can be watered once per calendar day (device local date), and it blooms on the 3rd watering, i.e. after 3 different days. On the first day you can confirm planting, watering (a 3-second screen that shows the note), and the growth stages in the memory book (📖 思い出帳). The attached screenshots show the bloomed state.
-- Settings (⚙) offers exporting a JSON backup via the share sheet and restoring it via the document picker. Both work locally only.
+[Overview]
+A small pixel-art farm where users plant short notes about things they did today ("dekitakoto") as seeds, and look back on them by watering the seeds once a day.
+
+[Account / network]
+- No sign-in is required. There is no account, no server, no ads, and no analytics.
+- The app makes no network connections. All data stays on the device (SQLite).
+
+[How to test]
+1. On first launch, tap "はじめる" to close the welcome screen.
+2. Swipe on the map to walk. Keep your finger down to keep walking.
+3. Stand on grass or a field (not the path) and tap the orange A button. Type a short note and tap "種を植える" to plant a seed.
+4. While standing on the seed, tap A, then "💧 水やりする". The note is shown for 3 seconds while the bar fills, then the seed grows into a sprout.
+5. Tap "📖 思い出帳" (top right) to see bloomed flowers and growing seeds.
+
+[About blooming]
+By design, each seed can be watered only once per calendar day (device local date), and it blooms on the 3rd watering, i.e. on the 3rd different day. Within a single day you can confirm planting, watering and the sprout stage. The bloomed state and the memory book are shown in the screenshots.
+
+[Other features]
+- Settings (⚙): "バックアップを保存" exports a JSON file through the iOS share sheet, and "バックアップから戻す" restores it through the document picker. Both are local only.
+- After 10 flowers have bloomed, the app calls the standard SKStoreReviewController once (no custom prompt).
+```
+
+日本語訳（確認用）：
+
+```
+できたこと農園をご審査いただきありがとうございます。
+
+【概要】
+その日にできた小さなこと（できたこと）を短い文章で種として植え、1日1回の水やりで読み返す、ドット絵の農園アプリです。
+
+【アカウント・通信】
+- サインインは不要です。アカウント、サーバー、広告、解析ツールはありません。
+- 通信は一切行いません。データはすべて端末内（SQLite）に保存されます。
+
+【確認手順】
+1. 初回起動時、「はじめる」でようこそ画面を閉じます。
+2. 画面をなぞると歩きます。指を置いたままで歩き続けます。
+3. 道以外の草地か畑に立ち、オレンジの A ボタンを押します。短い文章を入力して「種を植える」で種を植えます。
+4. 種の上に立って A →「💧 水やりする」。3秒間文章が表示され、種が芽に育ちます。
+5. 右上の「📖 思い出帳」で、咲いた花と育てている種を見られます。
+
+【開花について】
+仕様として、水やりは1つの種につき1日1回（端末の日付）で、3回目（＝3日目）に花が咲きます。1日の中では、種まき・水やり・芽の段階まで確認できます。開花した状態と思い出帳はスクリーンショットでご確認ください。
+
+【その他の機能】
+- 設定（⚙）：「バックアップを保存」は共有シートでJSONファイルを書き出し、「バックアップから戻す」はファイル選択で復元します。どちらも端末内だけで完結します。
+- 花が10個咲いたあと、iOS標準の評価ダイアログ（SKStoreReviewController）を一度だけ呼び出します（独自の確認画面はありません）。
 ```
 
 ---
