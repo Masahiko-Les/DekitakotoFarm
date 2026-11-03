@@ -17,7 +17,7 @@
 | カテゴリ（プライマリ） | ゲーム（カジュアル・シミュレーション） |
 | カテゴリ（セカンダリ） | ライフスタイル |
 | 価格 | 無料 |
-| 著作権 | © 2026 （開発者名） |
+| 著作権 | © 2026 Masahiko Fujita |
 
 サブタイトルの別案（App Store Connect に入力済みのものを採用）：
 - 小さなできたことを、花に育てるドット農園
@@ -84,9 +84,9 @@
 
 | 項目 | 内容 |
 |---|---|
-| サポートURL（必須） | （公開先が決まったら記入）`docs/app-store/support.md` の内容を公開 |
+| サポートURL（必須） | https://masahiko-les.github.io/DekitakotoFarm/support/ |
 | マーケティングURL（任意） | なし |
-| プライバシーポリシーURL（必須） | （公開先が決まったら記入）`docs/app-store/privacy-policy.md` の内容を公開 |
+| プライバシーポリシーURL（必須） | https://masahiko-les.github.io/DekitakotoFarm/privacy/ |
 
 ---
 
@@ -151,7 +151,7 @@ Thank you for reviewing Dekitakoto Farm.
 ## 申請前に残っていること
 
 - [x] アプリアイコン・スプラッシュ画像（`assets/images/icon.png`）
-- [ ] サポートページとプライバシーポリシーを公開して URL を記入
+- [x] サポートページとプライバシーポリシーを公開（GitHub Pages：`docs/support/`・`docs/privacy/`）
 - [ ] 著作権表記の名義、審査用の連絡先
 - [ ] スクリーンショット5枚（見本の農園データを作って撮影）
 - [x] App Store Connect で新規 App を作成 → `eas.json` の `ascAppId` を記入
