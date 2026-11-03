@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="できたこと農園">
+<meta name="theme-color" content="#4f6b3a">
+<title>できたこと農園</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --moss:#4f6b3a; --moss-d:#3b5229; --moss-l:#6f8c55;
+    --paper:#f6f0dc; --paper-d:#e8dfc2; --ink:#3a3226; --line:#d9cba3;
+    --accent:#c8743a; --water:#4a9fd8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#2f6b34;color:var(--ink);
+    font-family:"DotGothic16",system-ui,sans-serif;overscroll-behavior:none}
+  body{position:fixed;inset:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  canvas#map{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;display:block;touch-action:none}
+
+  /* 上部 */
+  .top{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 8px) 10px 18px;
+    background:linear-gradient(rgba(35,50,26,.82), rgba(35,50,26,0));pointer-events:none;z-index:2}
+  .top > *{pointer-events:auto}
+  header{display:flex;align-items:center;justify-content:space-between;color:var(--paper);gap:8px}
+  header h1{font-size:18px;margin:0;letter-spacing:.06em;font-weight:normal;text-shadow:0 2px 0 rgba(0,0,0,.35);white-space:nowrap}
+  header .btns{display:flex;gap:6px}
+  .hbtn{font-family:inherit;font-size:13px;background:var(--paper);color:var(--ink);border:2px solid var(--moss-d);
+    border-radius:6px;padding:6px 9px;box-shadow:0 3px 0 var(--moss-d);cursor:pointer;white-space:nowrap}
+  .hbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--moss-d)}
+  .stats{display:flex;gap:10px;color:var(--paper);font-size:12px;margin-top:6px;text-shadow:0 1px 0 rgba(0,0,0,.5);flex-wrap:wrap}
+
+  /* 下部 */
+  .bottom{position:fixed;left:0;right:0;bottom:0;padding:22px 10px calc(env(safe-area-inset-bottom) + 10px);
+    background:linear-gradient(rgba(35,50,26,0), rgba(35,50,26,.75) 45%);z-index:2;pointer-events:none}
+  .bottom > *{pointer-events:auto}
+  .hint{min-height:42px;background:rgba(246,240,220,.95);border:2px solid var(--moss-d);border-radius:6px;padding:7px 12px;
+    font-size:14px;line-height:1.5;display:flex;align-items:center;max-width:480px;margin:0 auto}
+  .controls{display:flex;justify-content:space-between;align-items:center;padding:10px 6px 0;touch-action:none;max-width:480px;margin:0 auto}
+  .dpad{position:relative;width:144px;height:144px}
+  .dpad button{position:absolute;width:48px;height:48px;background:rgba(30,40,22,.78);border:none;color:#e4ecd0;font-size:17px;
+    font-family:inherit;touch-action:none;cursor:pointer}
+  .dpad button:active,.dpad button.on{background:rgba(15,22,10,.92)}
+  .dpad .up{left:48px;top:0;border-radius:8px 8px 0 0}
+  .dpad .down{left:48px;top:96px;border-radius:0 0 8px 8px}
+  .dpad .left{left:0;top:48px;border-radius:8px 0 0 8px}
+  .dpad .right{left:96px;top:48px;border-radius:0 8px 8px 0}
+  .dpad .center{position:absolute;left:48px;top:48px;width:48px;height:48px;background:rgba(30,40,22,.78)}
+  .abtn{width:80px;height:80px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:26px;
+    font-family:inherit;box-shadow:0 5px 0 #8a4c22;touch-action:none;cursor:pointer}
+  .abtn:active{transform:translateY(3px);box-shadow:0 2px 0 #8a4c22}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(30,38,22,.6);display:none;align-items:center;justify-content:center;
+    padding:16px;z-index:10}
+  .overlay.show{display:flex}
+  .card{width:100%;max-width:440px;max-height:86vh;overflow:auto;background:var(--paper);border:3px solid var(--moss-d);
+    border-radius:8px;padding:18px 18px 16px;box-shadow:0 6px 0 rgba(0,0,0,.25);user-select:text;-webkit-user-select:text}
+  .card h2{font-size:18px;margin:0 0 10px;font-weight:normal}
+  .card p{font-size:14px;line-height:1.7;margin:6px 0}
+  .small{font-size:12px;opacity:.75}
+  .letter{font-family:"Klee One",serif;font-size:18px;line-height:32px;white-space:pre-wrap;word-break:break-all;
+    background:repeating-linear-gradient(transparent 0 31px,var(--line) 31px 32px);padding:0 4px;min-height:96px}
+  textarea.letter{width:100%;border:none;outline:none;resize:none;color:var(--ink);height:96px;display:block;overflow:hidden}
+  .row{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:14px;flex-wrap:wrap}
+  .btn{font-family:inherit;font-size:15px;padding:9px 16px;border-radius:6px;border:2px solid var(--moss-d);
+    background:var(--moss);color:var(--paper);box-shadow:0 3px 0 var(--moss-d);cursor:pointer}
+  .btn.sub{background:var(--paper);color:var(--ink)}
+  .btn.warn{background:#b5523b;border-color:#7e3324;box-shadow:0 3px 0 #7e3324}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--moss-d)}
+  .link{background:none;border:none;font-family:inherit;color:#8a4c22;text-decoration:underline;font-size:13px;cursor:pointer;padding:4px}
+  .drops{display:flex;gap:6px;margin:10px 0 4px;font-size:22px}
+  .drop{filter:grayscale(1);opacity:.35}.drop.on{filter:none;opacity:1}
+  .counter{text-align:right;font-size:12px;opacity:.7;margin-top:4px}
+  .tabs{display:flex;gap:6px;margin-bottom:10px}
+  .tab{flex:1;font-family:inherit;font-size:14px;padding:8px;border:2px solid var(--moss-d);border-radius:6px;background:var(--paper-d);cursor:pointer;color:var(--ink)}
+  .tab.on{background:var(--moss);color:var(--paper)}
+  .entry{display:flex;gap:10px;align-items:flex-start;padding:10px;border:2px solid var(--line);border-radius:6px;margin-bottom:8px;background:#fbf7ea;cursor:pointer}
+  .entry img{width:40px;height:40px;image-rendering:pixelated;flex:none;background:#9cc27a;border-radius:4px}
+  .entry .t{font-family:"Klee One",serif;font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+  .entry .m{font-size:11px;opacity:.7;margin-top:2px}
+  .empty{text-align:center;font-size:13px;opacity:.7;padding:24px 0}
+  .bigflower{display:block;margin:4px auto 8px;width:96px;height:96px;image-rendering:pixelated;background:#9cc27a;border-radius:8px}
+  .center{text-align:center}
+  #waterOv .card{text-align:center}
+  .wtext{font-family:"Klee One",serif;font-size:22px;line-height:1.7;white-space:pre-wrap;word-break:break-all;margin:18px 4px 22px}
+  .bar{height:12px;background:var(--paper-d);border:2px solid var(--moss-d);border-radius:8px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--water)}
+  .wlabel{font-size:12px;opacity:.7;margin-top:8px}
+  .result{animation:pop .35s ease-out}
+  @keyframes pop{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+  ol.help{padding-left:20px;font-size:14px;line-height:1.8;margin:6px 0}
+  .debug{border-top:2px dashed var(--line);margin-top:14px;padding-top:10px}
+</style>
+</head>
+<body>
+<canvas id="map"></canvas>
+
+<div class="top">
+  <header>
+    <h1>できたこと農園</h1>
+    <div class="btns">
+      <button class="hbtn" id="bookBtn">📖 思い出帳</button>
+      <button class="hbtn" id="setBtn">⚙</button>
+    </div>
+  </header>
+  <div class="stats"><span id="stBloom"></span><span id="stGrow"></span><span id="stToday"></span></div>
+</div>
+
+<div class="bottom">
+  <div class="hint" id="hint">十字ボタンで歩こう</div>
+  <div class="controls">
+    <div class="dpad">
+      <button class="up" data-dir="up">▲</button>
+      <button class="left" data-dir="left">◀</button>
+      <div class="center"></div>
+      <button class="right" data-dir="right">▶</button>
+      <button class="down" data-dir="down">▼</button>
+    </div>
+    <button class="abtn" id="aBtn">A</button>
+  </div>
+</div>
+
+<div class="overlay" id="ov"><div class="card" id="card"></div></div>
+<div class="overlay" id="waterOv"><div class="card" id="wcard"></div></div>
+
+<script>
+(() => {
+  'use strict';
+  // ===== 設定 =====
+  const MW = 20, MH = 20, T = 16;
+  const KEY = 'dekitakoto-farm-v2', OLD_KEY = 'dekitakoto-farm-v1';
+  const MAX_WATER = 5;           // 何回水やりで花が咲くか
+  const WATER_MS = 3000;         // 水やり時の表示時間
+  const MAX_LINES = 3, MAX_CHARS = 80;
+  const TILES_ACROSS = 7.5;      // 画面の横幅に何マス入るか（小さいほどキャラが大きい）
+  const FLOWERS = [
+    {name:'ひまわり',     petal:'#f4c430', dark:'#d9a514', center:'#7a4a12'},
+    {name:'チューリップ', petal:'#e2483d', dark:'#b8322a', center:'#f6d36b'},
+    {name:'コスモス',     petal:'#f29cc0', dark:'#d67199', center:'#f4c430'},
+    {name:'あさがお',     petal:'#4f7fe0', dark:'#3559b0', center:'#f6f0dc'},
+    {name:'すみれ',       petal:'#9b6ad6', dark:'#7447ad', center:'#f6d36b'},
+    {name:'マリーゴールド',petal:'#f08a24', dark:'#c96812', center:'#a3420f'},
+    {name:'デイジー',     petal:'#fbfbf2', dark:'#d8d8c8', center:'#f4c430'},
+    {name:'ネモフィラ',   petal:'#8ec8f0', dark:'#5ea6d6', center:'#ffffff'},
+  ];
+
+  // ===== マップ定義 =====
+  const GRASS=0, ROAD=1, FIELD=2, TREE=3, WATER=4, HOUSE=5, SIGN=6;
+  const tiles = new Uint8Array(MW*MH);
+  const tileAt = (x,y) => (x<0||y<0||x>=MW||y>=MH) ? TREE : tiles[y*MW+x];
+  const setT = (x,y,t) => { if(x>=0&&y>=0&&x<MW&&y<MH) tiles[y*MW+x] = t; };
+  const fill = (x0,y0,x1,y1,t) => { for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) setT(x,y,t); };
+  const hash = (x,y) => { let h = (x*374761393 + y*668265263)|0; h = Math.imul(h^(h>>>13), 1274126177); return (h^(h>>>16))>>>0; };
+  const HOUSE_R = {x:3, y:3, w:5, h:4};        // 家（5×4マス）。ドアは下の段の真ん中
+  const DOOR = {x:5, y:6};
+  const START = {x:5, y:7};
+  const SIGN_P = {x:3, y:8};
+  const FIELDS = [
+    [10,3,15,6],      // 北東の畑
+    [6,13,10,16],     // 南の畑
+    [15,11,16,15],    // 東の細長い畑
+  ];
+  (function buildMap(){
+    // 小道（くねくね・左右非対称）
+    fill(5,7,6,10,ROAD);      // 家から南へ
+    fill(5,9,13,10,ROAD);     // 東へ曲がる
+    fill(12,9,13,17,ROAD);    // さらに南へ（農園の出口）
+    fill(7,7,11,7,ROAD);      // 家の前から北東の畑への細道
+    fill(5,11,5,13,ROAD);     // 池へ向かう細道
+    fill(14,12,14,12,ROAD);   // 東の畑への細道
+    // 畑
+    for(const [a,b,c,d] of FIELDS) fill(a,b,c,d,FIELD);
+    // 池
+    const pond = (cx,cy,rx,ry) => { for(let y=Math.floor(cy-ry);y<=Math.ceil(cy+ry);y++) for(let x=Math.floor(cx-rx);x<=Math.ceil(cx+rx);x++){
+      const dx=(x-cx)/rx, dy=(y-cy)/ry; if(dx*dx+dy*dy<=1) setT(x,y,WATER); } };
+    pond(3.2,15.4,1.6,1.5);
+    pond(16.5,8,1,0.6);
+    // 家・看板
+    fill(HOUSE_R.x, HOUSE_R.y, HOUSE_R.x+HOUSE_R.w-1, HOUSE_R.y+HOUSE_R.h-1, HOUSE);
+    setT(SIGN_P.x, SIGN_P.y, SIGN);
+    // 外周の林（でこぼこ）＋ 林のかたまり ＋ 点在する木
+    for(let y=0;y<MH;y++) for(let x=0;x<MW;x++){
+      const h = hash(x,y) % 100;
+      const edge = Math.min(x, y, MW-1-x, MH-1-y);
+      if(edge < 2){ setT(x,y,TREE); continue; }
+      if(tileAt(x,y) !== GRASS) continue;
+      if(Math.abs(x-START.x)<=2 && Math.abs(y-START.y)<=1) continue;
+      let nearRoad = false;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const t = tileAt(x+dx,y+dy); if(t===ROAD||t===HOUSE||t===FIELD||t===SIGN||t===WATER) nearRoad = true; }
+      if(edge === 2 && h < 30 && !nearRoad){ setT(x,y,TREE); continue; }
+      const grove = (x>=14 && y>=16) || (x<=3 && y>=10 && y<=12);
+      if(grove ? (h < 60 && !nearRoad) : (!nearRoad && h < 4)) setT(x,y,TREE);
+    }
+  })();
+  const blocked = (x,y) => { const t = tileAt(x,y); return t===TREE||t===WATER||t===HOUSE||t===SIGN; };
+  const plantable = (x,y) => { const t = tileAt(x,y); return t===GRASS||t===FIELD; };
+
+  // ===== 保存 =====
+  const mem = {};
+  function rawGet(k){ try{ return localStorage.getItem(k); } catch(e){ return mem[k] || null; } }
+  function load(){
+    try{
+      const s = rawGet(KEY);
+      if(s) return JSON.parse(s);
+      const old = rawGet(OLD_KEY);
+      if(old) return migrate(JSON.parse(old));
+    }catch(e){}
+    return null;
+  }
+  // 前のバージョン（16×12マス）の種を、畑に並べ直して引き継ぐ
+  function migrate(o){
+    const st = fresh(); st.seenHelp = true;
+    st.dayOffset = o.dayOffset || 0; st.nextId = o.nextId || 1;
+    const spots = [];
+    for(const [a,b,c,d] of FIELDS) for(let y=b;y<=d;y++) for(let x=a;x<=c;x++) spots.push([x,y]);
+    const list = Object.values(o.seeds || {}).sort((a,b) => a.id - b.id);
+    list.forEach((s,i) => { const [x,y] = spots[i]; s.x = x; s.y = y; st.seeds[x+'_'+y] = s; });
+    return st;
+  }
+  function save(){
+    const s = JSON.stringify(state);
+    try{ localStorage.setItem(KEY, s); } catch(e){ mem[KEY] = s; }
+    updateStats();
+  }
+  function fresh(){ return {v:2, seeds:{}, player:{x:START.x, y:START.y, dir:'down'}, dayOffset:0, seenHelp:false, nextId:1}; }
+  let state = load() || fresh();
+  if(!state.seeds) state = fresh();
+  // マップが変わって置けなくなった種は、空いている畑へ引っ越し
+  (function fixSeeds(){
+    const spots = [];
+    for(const [a,b,c,d] of FIELDS) for(let y=b;y<=d;y++) for(let x=a;x<=c;x++) spots.push([x,y]);
+    const ok = {}, bad = [];
+    for(const s of Object.values(state.seeds)){
+      if(s.x < MW && s.y < MH && plantable(s.x, s.y) && !ok[s.x+'_'+s.y]) ok[s.x+'_'+s.y] = s; else bad.push(s);
+    }
+    for(const s of bad.sort((a,b) => a.id - b.id)){
+      const sp = spots.find(([x,y]) => !ok[x+'_'+y]); if(!sp) break;
+      s.x = sp[0]; s.y = sp[1]; ok[sp[0]+'_'+sp[1]] = s;
+    }
+    state.seeds = ok;
+  })();
+
+  // ===== 日付 =====
+  function today(){
+    const d = new Date(Date.now() + (state.dayOffset||0)*86400000);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  const jp = s => { const [y,m,d] = s.split('-').map(Number); return `${m}月${d}日`; };
+  const jpY = s => { const [y,m,d] = s.split('-').map(Number); return `${y}年${m}月${d}日`; };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const key = (x,y) => x+'_'+y;
+  const seedAt = (x,y) => state.seeds[key(x,y)];
+  const canWater = s => !s.bloomed && s.waters.length < MAX_WATER && !s.waters.includes(today());
+
+  // ===== ドット絵 =====
+  function r(c, x, y, w, h, col){ c.fillStyle = col; c.fillRect(x, y, w, h); }
+
+  function drawGrass(c, X, Y, tx, ty){
+    r(c, X, Y, T, T, '#7fae5a');
+    const h = hash(tx, ty);
+    for(let i=0;i<4;i++){
+      const px = (h >>> (i*5)) % 14 + 1, py = (h >>> (i*5+3)) % 14 + 1;
+      r(c, X+px, Y+py, 1, 2, i%2 ? '#6c9a4a' : '#93c06c');
+    }
+    if(h % 23 === 0){ r(c, X+5, Y+6, 2, 2, '#f4f0e0'); r(c, X+6, Y+7, 1, 1, '#f4c430'); } // 小さな野の花
+    if(h % 29 === 1){ r(c, X+10, Y+9, 2, 2, '#e88aa8'); }
+  }
+  function drawRoad(c, X, Y, tx, ty){
+    r(c, X, Y, T, T, '#d9c08c');
+    const h = hash(tx+101, ty+57);
+    for(let i=0;i<3;i++){
+      const px = (h >>> (i*6)) % 14 + 1, py = (h >>> (i*6+3)) % 14 + 1;
+      r(c, X+px, Y+py, 2, 1, i ? '#c4a873' : '#ecd9ad');
+    }
+    const edge = '#b39463';
+    if(tileAt(tx,ty-1)!==ROAD) r(c, X, Y, T, 1, edge);
+    if(tileAt(tx,ty+1)!==ROAD) r(c, X, Y+T-1, T, 1, edge);
+    if(tileAt(tx-1,ty)!==ROAD) r(c, X, Y, 1, T, edge);
+    if(tileAt(tx+1,ty)!==ROAD) r(c, X+T-1, Y, 1, T, edge);
+  }
+  function drawField(c, X, Y, tx, ty){
+    r(c, X, Y, T, T, '#9a6a44');
+    for(let yy=2; yy<T; yy+=4){ r(c, X, Y+yy, T, 1, '#7d5233'); r(c, X, Y+yy+1, T, 1, '#ad7c53'); }
+    if(tileAt(tx,ty-1)!==FIELD) r(c, X, Y, T, 1, '#6b4426');
+    if(tileAt(tx,ty+1)!==FIELD) r(c, X, Y+T-1, T, 1, '#6b4426');
+    if(tileAt(tx-1,ty)!==FIELD) r(c, X, Y, 1, T, '#6b4426');
+    if(tileAt(tx+1,ty)!==FIELD) r(c, X+T-1, Y, 1, T, '#6b4426');
+  }
+  function drawTree(c, X, Y, tx, ty){
+    drawGrass(c, X, Y, tx, ty);
+    const v = hash(tx,ty) % 3;
+    const g = ['#2f6b34','#2b6230','#357439'][v], hl = ['#3f8a43','#3a8040','#47924b'][v];
+    r(c, X+6, Y+11, 4, 5, '#6b4423');
+    r(c, X+1, Y+4, 14, 7, g);
+    r(c, X+3, Y+1, 10, 3, g);
+    r(c, X+2, Y+11, 12, 1, '#285a2c');
+    r(c, X+4, Y+3, 4, 3, hl);
+    r(c, X+10, Y+6, 2, 2, hl);
+  }
+  function drawWater(c, X, Y, tx, ty){
+    r(c, X, Y, T, T, '#5aa0c8');
+    if((tx*3+ty+Math.floor(now/700))%3===0) r(c, X+3, Y+5, 4, 1, '#a8d4ec');
+    else if((tx+ty)%2===0) r(c, X+8, Y+10, 5, 1, '#a8d4ec');
+    const e = '#c9b98a';
+    if(tileAt(tx,ty-1)!==WATER) r(c, X, Y, T, 2, e);
+    if(tileAt(tx,ty+1)!==WATER) r(c, X, Y+T-2, T, 2, e);
+    if(tileAt(tx-1,ty)!==WATER) r(c, X, Y, 2, T, e);
+    if(tileAt(tx+1,ty)!==WATER) r(c, X+T-2, Y, 2, T, e);
+  }
+  function drawSign(c, X, Y, tx, ty){
+    drawGrass(c, X, Y, tx, ty);
+    r(c, X+7, Y+8, 2, 7, '#6b4423');
+    r(c, X+2, Y+2, 12, 7, '#a8763f');
+    r(c, X+2, Y+8, 12, 1, '#7a5228');
+    r(c, X+4, Y+4, 8, 1, '#5e3b22'); r(c, X+4, Y+6, 6, 1, '#5e3b22');
+  }
+  function drawHouse(c){
+    const X = HOUSE_R.x*T, Y = HOUSE_R.y*T, w = HOUSE_R.w*T, h = HOUSE_R.h*T; // 80×64
+    // 地面
+    for(let ty=HOUSE_R.y; ty<HOUSE_R.y+HOUSE_R.h; ty++) for(let tx=HOUSE_R.x; tx<HOUSE_R.x+HOUSE_R.w; tx++) drawGrass(c, tx*T, ty*T, tx, ty);
+    // 煙突
+    r(c, X+58, Y+2, 8, 14, '#7a6a5a'); r(c, X+57, Y+1, 10, 3, '#5e5044');
+    // 屋根
+    r(c, X+10, Y+6, w-20, 4, '#b04a3e');
+    r(c, X+5, Y+10, w-10, 6, '#b04a3e');
+    r(c, X+1, Y+16, w-2, 18, '#b04a3e');
+    for(let yy=12; yy<34; yy+=5) r(c, X+2, Y+yy, w-4, 1, '#8c3730');
+    r(c, X+10, Y+6, w-20, 1, '#cc6355');
+    r(c, X, Y+33, w, 3, '#7a2c25');
+    // 壁
+    r(c, X+5, Y+36, w-10, h-37, '#efe2c0');
+    r(c, X+5, Y+36, 2, h-37, '#a8763f'); r(c, X+w-7, Y+36, 2, h-37, '#a8763f');
+    r(c, X+5, Y+h-2, w-10, 2, '#a8763f');
+    // 窓
+    for(const wx of [12, 54]){
+      r(c, X+wx, Y+40, 14, 12, '#5e3b22');
+      r(c, X+wx+1, Y+41, 12, 10, '#8cc4e4');
+      r(c, X+wx+6, Y+41, 1, 10, '#5e3b22'); r(c, X+wx+1, Y+46, 12, 1, '#5e3b22');
+      r(c, X+wx+2, Y+42, 3, 2, '#d8eef8');
+      r(c, X+wx-1, Y+52, 16, 2, '#7a5228');
+      r(c, X+wx, Y+54, 3, 2, '#e2483d'); r(c, X+wx+6, Y+54, 3, 2, '#f4c430'); r(c, X+wx+11, Y+54, 3, 2, '#f29cc0');
+    }
+    // ドア
+    r(c, X+33, Y+42, 14, 22, '#5e3b22');
+    r(c, X+34, Y+43, 12, 21, '#8a5a30');
+    r(c, X+34, Y+52, 12, 1, '#6b4426');
+    r(c, X+43, Y+53, 2, 2, '#f4c430');
+    r(c, X+31, Y+h-1, 18, 1, '#9a8a6a');
+  }
+  function drawTile(c, tx, ty){
+    const X = tx*T, Y = ty*T, t = tileAt(tx,ty);
+    if(t===GRASS) drawGrass(c, X, Y, tx, ty);
+    else if(t===ROAD) drawRoad(c, X, Y, tx, ty);
+    else if(t===FIELD) drawField(c, X, Y, tx, ty);
+    else if(t===TREE) drawTree(c, X, Y, tx, ty);
+    else if(t===WATER) drawWater(c, X, Y, tx, ty);
+    else if(t===SIGN) drawSign(c, X, Y, tx, ty);
+  }
+
+  function mound(c, X, Y){
+    r(c, X+3, Y+11, 10, 3, '#7a4e2d');
+    r(c, X+4, Y+10, 8, 1, '#8f5e38');
+    r(c, X+4, Y+14, 8, 1, '#5e3b22');
+  }
+  // stage: 0..4 育成中, 5 = 開花
+  function drawPlant(c, X, Y, stage, fl){
+    const f = FLOWERS[fl] || FLOWERS[0];
+    mound(c, X, Y);
+    if(stage === 0){
+      r(c, X+6, Y+10, 1, 1, '#efe2b0'); r(c, X+9, Y+11, 1, 1, '#efe2b0'); r(c, X+7, Y+12, 1, 1, '#efe2b0');
+      return;
+    }
+    if(stage === 1){
+      r(c, X+7, Y+8, 2, 3, '#3d8b3d');
+      r(c, X+5, Y+7, 2, 2, '#5cb85c'); r(c, X+9, Y+7, 2, 2, '#5cb85c');
+      return;
+    }
+    if(stage === 2){
+      r(c, X+7, Y+6, 2, 5, '#3d8b3d');
+      r(c, X+4, Y+6, 3, 2, '#5cb85c'); r(c, X+9, Y+6, 3, 2, '#5cb85c');
+      r(c, X+5, Y+8, 2, 1, '#4aa34a'); r(c, X+9, Y+8, 2, 1, '#4aa34a');
+      return;
+    }
+    r(c, X+7, Y+4, 2, 7, '#3d8b3d');
+    r(c, X+3, Y+8, 4, 2, '#5cb85c'); r(c, X+9, Y+7, 4, 2, '#5cb85c');
+    if(stage === 3){ r(c, X+6, Y+2, 4, 3, '#4aa34a'); return; }
+    if(stage === 4){
+      r(c, X+6, Y+3, 4, 2, '#4aa34a');
+      r(c, X+6, Y+1, 4, 2, f.petal); r(c, X+7, Y+0, 2, 1, f.petal);
+      return;
+    }
+    r(c, X+5, Y+0, 6, 1, f.petal);
+    r(c, X+4, Y+1, 8, 4, f.petal);
+    r(c, X+5, Y+5, 6, 1, f.petal);
+    r(c, X+3, Y+2, 1, 2, f.petal); r(c, X+12, Y+2, 1, 2, f.petal);
+    r(c, X+4, Y+4, 8, 1, f.dark);
+    r(c, X+7, Y+2, 2, 2, f.center);
+  }
+  function stageOf(s){
+    if(s.bloomed) return 5;
+    const n = s.waters.length;
+    return n===0 ? 0 : n===1 ? 1 : n===2 ? 2 : n===3 ? 3 : 4;
+  }
+  function drawDrop(c, X, Y, bob){
+    const y = Y + bob;
+    r(c, X+12, y, 1, 1, '#4a9fd8');
+    r(c, X+11, y+1, 3, 2, '#4a9fd8');
+    r(c, X+11, y+3, 3, 1, '#2f7fb8');
+    r(c, X+12, y+1, 1, 1, '#bfe3f7');
+  }
+  // ph: -1 = 立ち止まり、0..3 = 歩きのコマ（0,2 = 足がそろう / 1,3 = 左右の足が前）
+  function drawPlayer(c, X, Y, dir, ph){
+    const walking = ph >= 0;
+    const step = walking && (ph === 1 || ph === 3);
+    const bob = step ? -1 : 0;                      // 足を出したコマで体が少し上がる
+    const skin = '#f2c9a0', shoe = '#4a3a2a', shoe2 = '#33281c', shirt = '#3f6fb5', shirt2 = '#5a8ad0', hair = '#6b4a2a';
+    r(c, X+3, Y+15, 10, 1, 'rgba(0,0,0,.22)');
+    const side = dir === 'left' || dir === 'right';
+    const sgn = dir === 'right' ? 1 : -1;
+    // 足
+    if(side){
+      if(!step){ r(c, X+6, Y+13, 2, 2, shoe2); r(c, X+8, Y+13, 2, 2, shoe); }
+      else {
+        const f = ph === 1 ? 1 : -1;                // 前に出る足を入れ替える
+        r(c, X+7 - 2*sgn*f, Y+13, 2, 2, shoe2);     // 奥の足
+        r(c, X+7 + 2*sgn*f, Y+13, 2, 2, shoe);      // 手前の足
+        r(c, X+7, Y+12, 2, 1, shoe);
+      }
+    } else {
+      const lUp = ph === 3, rUp = ph === 1;
+      r(c, X+5, Y+13 - (lUp?1:0), 2, 2, shoe);
+      r(c, X+9, Y+13 - (rUp?1:0), 2, 2, shoe);
+    }
+    const y = Y + bob;
+    // 体
+    r(c, X+4, y+8, 8, 5, shirt);
+    r(c, X+4, y+8, 8, 1, shirt2);
+    // 腕
+    if(side){
+      const sw = !step ? 0 : (ph === 1 ? 2 : -2) * sgn;   // 前後に振る
+      r(c, X+7 + sw, y+9, 2, 3, shirt2);
+      r(c, X+7 + sw + (sw > 0 ? 1 : sw < 0 ? -1 : 0), y+12, 2, 1, skin);
+    } else {
+      const la = ph === 1 ? 1 : ph === 3 ? -1 : 0;        // 左右の腕を交互に
+      r(c, X+3, y+9 + la, 1, 3, skin);
+      r(c, X+12, y+9 - la, 1, 3, skin);
+    }
+    // 顔・帽子
+    r(c, X+5, y+4, 6, 4, skin);
+    r(c, X+4, y+1, 8, 3, '#e2c15a');
+    r(c, X+2, y+3, 12, 1, '#c9a43c');
+    r(c, X+4, y+3, 8, 1, '#c0392b');
+    if(dir === 'up'){ r(c, X+5, y+4, 6, 3, hair); return; }
+    if(dir === 'down'){ r(c, X+6, y+5, 1, 1, '#2a2018'); r(c, X+9, y+5, 1, 1, '#2a2018'); r(c, X+7, y+7, 2, 1, '#e0a080'); }
+    if(dir === 'left'){ r(c, X+5, y+5, 1, 1, '#2a2018'); r(c, X+9, y+4, 2, 3, hair); }
+    if(dir === 'right'){ r(c, X+10, y+5, 1, 1, '#2a2018'); r(c, X+5, y+4, 2, 3, hair); }
+  }
+  // キャラが種の上に立っているとき、頭の上に吹き出しで種を見せる
+  function drawBubble(c, X, Y, s, bob){
+    const by = Y - 21 + bob;
+    r(c, X-1, by, 18, 18, '#3a3226');
+    r(c, X, by+1, 16, 16, '#fffdf2');
+    r(c, X+7, by+18, 3, 1, '#3a3226'); r(c, X+8, by+19, 1, 1, '#3a3226');
+    r(c, X+7, by+17, 3, 1, '#fffdf2');
+    c.save(); c.beginPath(); c.rect(X, by+1, 16, 16); c.clip();
+    drawPlant(c, X, by+1, stageOf(s), s.flower);
+    c.restore();
+  }
+
+  // ===== アイコン画像（思い出帳用）=====
+  const iconCache = {};
+  function plantIcon(stage, fl){
+    const k = stage+'_'+fl;
+    if(iconCache[k]) return iconCache[k];
+    const c = document.createElement('canvas'); c.width = T; c.height = T;
+    const g = c.getContext('2d');
+    drawPlant(g, 0, 0, stage, fl);
+    return (iconCache[k] = c.toDataURL());
+  }
+
+  // ===== 画面（全画面キャンバス＋カメラ）=====
+  const cv = document.getElementById('map');
+  const ctx = cv.getContext('2d');
+  let P = 3, viewW = 0, viewH = 0;   // P = 1ドットあたりの実ピクセル数
+  function resize(){
+    const dpr = window.devicePixelRatio || 1;
+    const w = window.innerWidth, h = window.innerHeight;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    P = Math.max(2, Math.round(cv.width / (TILES_ACROSS * T)));
+    viewW = cv.width / P; viewH = cv.height / P;
+    ctx.imageSmoothingEnabled = false;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+
+  // ===== 描画ループ =====
+  let now = 0;
+  const pl = state.player;
+  let rx = pl.x, ry = pl.y, walkUntil = 0, walkStart = 0;
+  const DIRS = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
+  function facing(){ const d = DIRS[pl.dir]; return [pl.x+d[0], pl.y+d[1]]; }
+
+  function render(t){
+    now = t;
+    rx += (pl.x - rx) * 0.3; ry += (pl.y - ry) * 0.3;
+    if(Math.abs(pl.x-rx) < .02) rx = pl.x;
+    if(Math.abs(pl.y-ry) < .02) ry = pl.y;
+
+    // カメラ：キャラが画面のやや上寄り（下に操作ボタンがあるため）
+    const px = rx*T + T/2, py = ry*T + T/2;
+    let camX = px - viewW/2, camY = py - viewH*0.42;
+    camX = Math.max(0, Math.min(MW*T - viewW, camX));
+    camY = Math.max(-viewH*0.1, Math.min(MH*T - viewH*0.8, camY));
+    const ox = Math.round(camX*P), oy = Math.round(camY*P);
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle = '#2f6b34'; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.setTransform(P,0,0,P,-ox,-oy);
+
+    const x0 = Math.max(0, Math.floor(camX/T)-1), x1 = Math.min(MW-1, Math.ceil((camX+viewW)/T)+1);
+    const y0 = Math.max(0, Math.floor(camY/T)-1), y1 = Math.min(MH-1, Math.ceil((camY+viewH)/T)+1);
+    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(tileAt(x,y)!==HOUSE) drawTile(ctx, x, y);
+    if(x1 >= HOUSE_R.x && x0 <= HOUSE_R.x+HOUSE_R.w && y1 >= HOUSE_R.y && y0 <= HOUSE_R.y+HOUSE_R.h) drawHouse(ctx);
+
+    // 植物とキャラ（y順に重ねる）
+    const bob = Math.round(Math.sin(t/300));
+    const list = [];
+    for(const s of Object.values(state.seeds)) if(s.x>=x0&&s.x<=x1&&s.y>=y0&&s.y<=y1) list.push({y:s.y, s});
+    list.push({y: ry + 0.01, p:true});
+    list.sort((a,b) => a.y - b.y);
+    const pX = Math.round(rx*T*P)/P, pY = Math.round(ry*T*P)/P;
+    const under = (rx===pl.x && ry===pl.y) ? seedAt(pl.x, pl.y) : null;
+    for(const it of list){
+      if(it.p) drawPlayer(ctx, pX, pY, pl.dir, (t < walkUntil || rx !== pl.x || ry !== pl.y) ? (1 + Math.floor((t - walkStart)/115)) % 4 : -1);
+      else {
+        const s = it.s;
+        drawPlant(ctx, s.x*T, s.y*T, stageOf(s), s.flower);
+        if(canWater(s) && s !== under) drawDrop(ctx, s.x*T, s.y*T - 1, bob);
+      }
+    }
+    if(under) drawBubble(ctx, pX, pY, under, bob);
+
+    requestAnimationFrame(render);
+  }
+
+  // ===== 移動 =====
+  function move(dir){
+    if(overlayOpen()) return;
+    pl.dir = dir;
+    const [dx, dy] = DIRS[dir];
+    const nx = pl.x + dx, ny = pl.y + dy;
+    if(!blocked(nx, ny)){ pl.x = nx; pl.y = ny; if(now > walkUntil) walkStart = now; walkUntil = now + 230; }
+    save(); updateHint();
+  }
+
+  const hint = document.getElementById('hint');
+  function updateHint(){
+    const [fx, fy] = facing();
+    const s = seedAt(pl.x, pl.y);
+    const ft = tileAt(fx, fy);
+    if(s){
+      if(s.bloomed) hint.innerHTML = `<b>A</b>&nbsp;で思い出を読む（${esc(FLOWERS[s.flower].name)}）`;
+      else if(canWater(s)) hint.innerHTML = `<b>A</b>&nbsp;で種を見る・水やりする（${s.waters.length}/${MAX_WATER}）`;
+      else hint.innerHTML = `<b>A</b>&nbsp;で種を見る（今日は水やり済み・${s.waters.length}/${MAX_WATER}）`;
+    } else if(ft === SIGN){
+      hint.innerHTML = '<b>A</b>&nbsp;で看板を読む';
+    } else if(ft === HOUSE && fx===DOOR.x && fy===DOOR.y){
+      hint.textContent = 'わが家だ。今日も一日おつかれさま。';
+    } else if(tileAt(pl.x,pl.y) === ROAD){
+      hint.textContent = '道には種を蒔けません。草地か畑へ行こう。';
+    } else if(tileAt(pl.x,pl.y) === FIELD){
+      hint.innerHTML = '<b>A</b>&nbsp;でこの畑に「できたこと」を蒔く';
+    } else {
+      hint.innerHTML = '<b>A</b>&nbsp;でここに「できたこと」を蒔く';
+    }
+  }
+  function updateStats(){
+    const all = Object.values(state.seeds);
+    const b = all.filter(s => s.bloomed).length;
+    const todayN = all.filter(s => canWater(s)).length;
+    document.getElementById('stBloom').textContent = `🌸 咲いた花 ${b}`;
+    document.getElementById('stGrow').textContent = `🌱 育てている種 ${all.length - b}`;
+    document.getElementById('stToday').textContent = `💧 今日水やりできる種 ${todayN}`;
+  }
+
+  function pressA(){
+    if(overlayOpen()) return;
+    const s = seedAt(pl.x, pl.y);
+    if(s){ if(s.bloomed) openMemory(s); else openSeed(s); return; }
+    const [fx, fy] = facing();
+    if(tileAt(fx,fy) === SIGN){ openHelp(false, true); return; }
+    if(plantable(pl.x, pl.y)) openPlant(pl.x, pl.y);
+  }
+
+  // ===== モーダル =====
+  const ov = document.getElementById('ov'), card = document.getElementById('card');
+  const wov = document.getElementById('waterOv'), wcard = document.getElementById('wcard');
+  let watering = false;
+  const overlayOpen = () => ov.classList.contains('show') || wov.classList.contains('show');
+  function openModal(html){ card.innerHTML = html; ov.classList.add('show'); card.scrollTop = 0; }
+  function closeModal(){ ov.classList.remove('show'); updateHint(); }
+  ov.addEventListener('click', e => { if(e.target === ov) closeModal(); });
+
+  function openPlant(x, y){
+    openModal(`
+      <h2>🌱 「できたこと」を植える</h2>
+      <p class="small">どんなに小さなことでも大丈夫。</p>
+      <textarea class="letter" id="seedText" rows="${MAX_LINES}" maxlength="${MAX_CHARS}"></textarea>
+      <div class="counter" id="cnt">0 / ${MAX_CHARS}字・${MAX_LINES}行まで</div>
+      <div class="row">
+        <button class="btn sub" data-act="close">やめる</button>
+        <button class="btn" id="plantGo" disabled>種を植える</button>
+      </div>`);
+    const ta = document.getElementById('seedText'), go = document.getElementById('plantGo'), cnt = document.getElementById('cnt');
+    ta.addEventListener('input', () => {
+      let v = ta.value;
+      const lines = v.split('\n');
+      if(lines.length > MAX_LINES) v = lines.slice(0, MAX_LINES).join('\n');
+      if(v.length > MAX_CHARS) v = v.slice(0, MAX_CHARS);
+      if(v !== ta.value) ta.value = v;
+      cnt.textContent = `${v.length} / ${MAX_CHARS}字・${MAX_LINES}行まで`;
+      go.disabled = v.trim().length === 0;
+    });
+    go.addEventListener('click', () => {
+      const text = ta.value.trim();
+      if(!text) return;
+      state.seeds[key(x,y)] = {
+        id: state.nextId++, x, y, text,
+        planted: today(), waters: [], bloomed: null,
+        flower: Math.floor(Math.random() * FLOWERS.length)
+      };
+      save();
+      openModal(`
+        <div class="center result">
+          <img class="bigflower" src="${plantIcon(0, 0)}" alt="">
+          <h2>種を植えました</h2>
+          <p>毎日1回、水やりをしながら<br>今日のできたことを振り返ろう。<br>${MAX_WATER}回水をあげると花が咲きます。</p>
+          <div class="row" style="justify-content:center"><button class="btn" data-act="close">OK</button></div>
+        </div>`);
+    });
+    setTimeout(() => ta.focus(), 50);
+  }
+
+  function dropsHTML(n){
+    let h = '<div class="drops">';
+    for(let i=0;i<MAX_WATER;i++) h += `<span class="drop ${i<n?'on':''}">💧</span>`;
+    return h + '</div>';
+  }
+
+  function openSeed(s){
+    const ok = canWater(s);
+    const last = s.waters.length ? `最後の水やり：${jp(s.waters[s.waters.length-1])}` : 'まだ水やりしていません';
+    openModal(`
+      <h2>🌱 ${jp(s.planted)}に植えた種</h2>
+      <div class="letter">${esc(s.text)}</div>
+      ${dropsHTML(s.waters.length)}
+      <p class="small">水やり ${s.waters.length} / ${MAX_WATER}・${last}</p>
+      ${ok ? '' : '<p>今日はもう水やりしました。また明日、会いに来よう。</p>'}
+      <div class="row">
+        <button class="link" id="pull" style="margin-right:auto">この種を抜く</button>
+        <button class="btn sub" data-act="close">閉じる</button>
+        <button class="btn" id="waterGo" ${ok?'':'disabled'}>💧 水やりする</button>
+      </div>`);
+    document.getElementById('waterGo').addEventListener('click', () => startWatering(s));
+    const pull = document.getElementById('pull');
+    let armed = false;
+    pull.addEventListener('click', () => {
+      if(!armed){ armed = true; pull.textContent = '本当に抜く？（もう一度タップ）'; return; }
+      delete state.seeds[key(s.x, s.y)];
+      save(); closeModal();
+    });
+  }
+
+  function startWatering(s){
+    if(!canWater(s) || watering) return;
+    watering = true;
+    ov.classList.remove('show');
+    wcard.innerHTML = `
+      <p class="small">あなたの「できたこと」</p>
+      <div class="wtext">${esc(s.text)}</div>
+      <div class="bar"><i id="wbar"></i></div>
+      <div class="wlabel">💧 水をあげています…</div>`;
+    wov.classList.add('show');
+    const bar = document.getElementById('wbar');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      bar.style.transition = `width ${WATER_MS}ms linear`;
+      bar.style.width = '100%';
+    }));
+    setTimeout(() => {
+      s.waters.push(today());
+      const bloomed = s.waters.length >= MAX_WATER;
+      if(bloomed) s.bloomed = today();
+      save();
+      watering = false;
+      if(bloomed){
+        const f = FLOWERS[s.flower];
+        wcard.innerHTML = `
+          <div class="result">
+            <img class="bigflower" src="${plantIcon(5, s.flower)}" alt="">
+            <h2>🌸 ${esc(f.name)}が咲きました！</h2>
+            <p>${jp(s.planted)}の「できたこと」が花になりました。<br>思い出帳にしまっておきます。</p>
+            <div class="row" style="justify-content:center"><button class="btn" data-act="wclose">うれしい</button></div>
+          </div>`;
+      } else {
+        const st = stageOf(s);
+        wcard.innerHTML = `
+          <div class="result">
+            <img class="bigflower" src="${plantIcon(st, s.flower)}" alt="">
+            <h2>水をあげました</h2>
+            ${dropsHTML(s.waters.length).replace('class="drops"','class="drops" style="justify-content:center"')}
+            <p>できたことに水やりしました。<br>できていることがたくさんありますね。</p>
+            <div class="row" style="justify-content:center"><button class="btn" data-act="wclose">OK</button></div>
+          </div>`;
+      }
+    }, WATER_MS + 80);
+  }
+
+  function openMemory(s, back){
+    const f = FLOWERS[s.flower];
+    openModal(`
+      <div class="center">
+        <img class="bigflower" src="${plantIcon(5, s.flower)}" alt="">
+        <h2>${esc(f.name)}</h2>
+      </div>
+      <div class="letter">${esc(s.text)}</div>
+      <p class="small" style="margin-top:12px">
+        植えた日：${jpY(s.planted)}<br>
+        水やりした日：${s.waters.map(jp).join('・')}<br>
+        咲いた日：${jpY(s.bloomed)}
+      </p>
+      <div class="row">
+        ${back ? '<button class="btn sub" id="backBook">思い出帳へ</button>' : ''}
+        <button class="btn" data-act="close">閉じる</button>
+      </div>`);
+    if(back) document.getElementById('backBook').addEventListener('click', () => openBook('bloom'));
+  }
+
+  function openBook(tab){
+    tab = tab || 'bloom';
+    const all = Object.values(state.seeds);
+    const bl = all.filter(s => s.bloomed).sort((a,b) => (b.bloomed+b.id).localeCompare(a.bloomed+a.id) || b.id - a.id);
+    const gr = all.filter(s => !s.bloomed).sort((a,b) => a.id - b.id);
+    let body = '';
+    if(tab === 'bloom'){
+      body = bl.length ? bl.map(s => `
+        <div class="entry" data-mem="${key(s.x,s.y)}">
+          <img src="${plantIcon(5, s.flower)}" alt="">
+          <div><div class="t">${esc(s.text)}</div>
+          <div class="m">${esc(FLOWERS[s.flower].name)}・${jp(s.planted)}に植えて ${jp(s.bloomed)}に咲いた</div></div>
+        </div>`).join('') : `<div class="empty">まだ花は咲いていません。<br>種に${MAX_WATER}回水をあげると、ここに思い出が増えていきます。</div>`;
+    } else {
+      body = gr.length ? gr.map(s => `
+        <div class="entry" data-go="${key(s.x,s.y)}">
+          <img src="${plantIcon(stageOf(s), s.flower)}" alt="">
+          <div style="flex:1"><div class="t">${esc(s.text)}</div>
+          <div class="m">${jp(s.planted)}に植えた・水やり ${s.waters.length}/${MAX_WATER}${canWater(s) ? '・<b style="color:#2f7fb8">今日まだ水やりできる</b>' : '・今日は済み'}</div>
+          <div class="m">タップでこの種のところへ行く</div></div>
+        </div>`).join('') : '<div class="empty">育てている種はありません。<br>マップで今日のできたことを植えてみよう。</div>';
+    }
+    openModal(`
+      <h2>📖 思い出帳</h2>
+      <div class="tabs">
+        <button class="tab ${tab==='bloom'?'on':''}" data-tab="bloom">咲いた花 ${bl.length}</button>
+        <button class="tab ${tab==='grow'?'on':''}" data-tab="grow">育てている種 ${gr.length}</button>
+      </div>
+      ${body}
+      <div class="row"><button class="btn" data-act="close">閉じる</button></div>`);
+    card.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => openBook(b.dataset.tab)));
+    card.querySelectorAll('[data-mem]').forEach(e => e.addEventListener('click', () => openMemory(state.seeds[e.dataset.mem], true)));
+    card.querySelectorAll('[data-go]').forEach(e => e.addEventListener('click', () => goTo(state.seeds[e.dataset.go])));
+  }
+
+  // 思い出帳から、その種の上へ移動する
+  function goTo(s){
+    pl.x = s.x; pl.y = s.y; pl.dir = 'down'; rx = s.x; ry = s.y;
+    save(); closeModal();
+  }
+
+  function helpHTML(){
+    return `
+      <ol class="help">
+        <li>十字ボタンで歩き、草地や畑の上で <b>A</b> を押すと、<b>立っている場所</b>に今日の小さな「できたこと」を種として蒔けます。<b>道には蒔けません。</b></li>
+        <li>種の上に立って <b>A</b> を押すと、いつでも見返せます。</li>
+        <li>水やりは<b>1つの種につき1日1回</b>。水をあげる間、そのできたことが3秒間表示されます。ゆっくり読んでみてください。</li>
+        <li>${MAX_WATER}回水をあげると花が咲き、マップに花が残ります。咲いた花は📖思い出帳でいつでも見返せます。</li>
+      </ol>
+      <p class="small">💧マークがついている種は、今日まだ水やりできる種です。<br>データはこのスマホの中だけに保存され、どこにも送られません。</p>`;
+  }
+  function openHelp(first, sign){
+    openModal(`
+      <h2>${sign ? '🪧 看板' : '🌼 できたこと農園へようこそ'}</h2>
+      <p>小さな「できたこと」を種にして、毎日の水やりで振り返り、自分の農園に花を咲かせていくアプリです。</p>
+      ${helpHTML()}
+      <div class="row"><button class="btn" data-act="close">${first ? 'はじめる' : '閉じる'}</button></div>`);
+    if(first){ state.seenHelp = true; save(); }
+  }
+
+  function openSettings(){
+    openModal(`
+      <h2>⚙ 設定</h2>
+      <div class="row" style="justify-content:flex-start;margin-top:4px">
+        <button class="btn sub" id="sHelp">あそびかた</button>
+      </div>
+      <p class="small" style="margin-top:14px">データはこの端末のブラウザにだけ保存されています。ブラウザのデータ削除や機種変更で消えるので、ときどきバックアップを保存しておくと安心です。</p>
+      <div class="row" style="justify-content:flex-start">
+        <button class="btn sub" id="sExport">バックアップを保存</button>
+        <button class="btn sub" id="sImport">バックアップから戻す</button>
+      </div>
+      <div class="row" style="justify-content:flex-start">
+        <button class="btn warn" id="sDel">すべてのデータを削除</button>
+      </div>
+      <div class="debug">
+        <p class="small">お試し用：日付を進めて、水やり〜開花までを今すぐ試せます。<br>現在の日付扱い：${jpY(today())}${state.dayOffset ? `（+${state.dayOffset}日）` : ''}</p>
+        <div class="row" style="justify-content:flex-start">
+          <button class="btn sub" id="sNext">日付を1日進める</button>
+          <button class="btn sub" id="sReset" ${state.dayOffset ? '' : 'disabled'}>本当の日付に戻す</button>
+        </div>
+      </div>
+      <div class="row"><button class="btn" data-act="close">閉じる</button></div>`);
+    document.getElementById('sHelp').onclick = () => openHelp(false);
+    document.getElementById('sExport').onclick = openExport;
+    document.getElementById('sImport').onclick = openImport;
+    const del = document.getElementById('sDel'); let armed = false;
+    del.onclick = () => {
+      if(!armed){ armed = true; del.textContent = '本当に削除する？（もう一度タップ）'; return; }
+      state = fresh(); Object.assign(pl, state.player); state.player = pl; rx = pl.x; ry = pl.y;
+      state.seenHelp = true; save(); closeModal();
+    };
+    document.getElementById('sNext').onclick = () => { state.dayOffset = (state.dayOffset||0) + 1; save(); openSettings(); };
+    document.getElementById('sReset').onclick = () => { state.dayOffset = 0; save(); openSettings(); };
+  }
+
+  function openExport(){
+    const json = JSON.stringify(state);
+    openModal(`
+      <h2>バックアップを保存</h2>
+      <p class="small">下の文字をすべてコピーして、メモアプリなどに貼り付けて保存してください。戻すときは「バックアップから戻す」に貼り付けます。</p>
+      <textarea id="exTxt" readonly style="width:100%;height:120px;font-size:11px;font-family:monospace">${esc(json)}</textarea>
+      <p class="small" id="exMsg"></p>
+      <div class="row">
+        <button class="btn sub" id="exFile">ファイルで保存</button>
+        <button class="btn sub" id="exBack">戻る</button>
+        <button class="btn" id="exCopy">コピー</button>
+      </div>`);
+    const msg = document.getElementById('exMsg');
+    document.getElementById('exBack').onclick = openSettings;
+    document.getElementById('exCopy').onclick = async () => {
+      const ta = document.getElementById('exTxt');
+      try{ await navigator.clipboard.writeText(json); msg.textContent = '✅ コピーしました。'; }
+      catch(e){ ta.focus(); ta.select(); msg.textContent = '文字を選択しました。長押しでコピーしてください。'; }
+    };
+    document.getElementById('exFile').onclick = () => {
+      try{
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+        a.download = `dekitakoto-farm-${today()}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        msg.textContent = '保存できない環境では「コピー」を使ってください。';
+      }catch(e){ msg.textContent = 'この環境ではファイル保存ができません。「コピー」を使ってください。'; }
+    };
+  }
+
+  function openImport(){
+    openModal(`
+      <h2>バックアップから戻す</h2>
+      <p class="small">保存しておいたバックアップの文字を貼り付けるか、ファイルを選んでください。今の農園は上書きされます。</p>
+      <textarea id="imTxt" style="width:100%;height:120px;font-size:11px;font-family:monospace" placeholder="ここに貼り付け"></textarea>
+      <input type="file" id="imFile" accept="application/json,.json,.txt" style="font-size:12px;margin-top:6px">
+      <p class="small" id="imMsg"></p>
+      <div class="row">
+        <button class="btn sub" id="imBack">戻る</button>
+        <button class="btn" id="imGo">戻す</button>
+      </div>`);
+    const msg = document.getElementById('imMsg'), ta = document.getElementById('imTxt');
+    document.getElementById('imBack').onclick = openSettings;
+    document.getElementById('imFile').onchange = e => {
+      const f = e.target.files[0]; if(!f) return;
+      const rd = new FileReader(); rd.onload = () => { ta.value = rd.result; }; rd.readAsText(f);
+    };
+    document.getElementById('imGo').onclick = () => {
+      try{
+        const d = JSON.parse(ta.value);
+        if(!d || typeof d.seeds !== 'object') throw 0;
+        state = Object.assign(fresh(), d);
+        Object.assign(pl, state.player); state.player = pl; rx = pl.x; ry = pl.y;
+        save(); updateHint();
+        openModal(`<h2>✅ バックアップから戻しました</h2><div class="row"><button class="btn" data-act="close">OK</button></div>`);
+      }catch(e){ msg.textContent = '⚠ 読み込めませんでした。文字がすべて貼り付けられているか確認してください。'; }
+    };
+  }
+
+  // 共通の閉じるボタン
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-act]'); if(!a) return;
+    if(a.dataset.act === 'close') closeModal();
+    if(a.dataset.act === 'wclose'){ wov.classList.remove('show'); updateHint(); }
+  });
+
+  // ===== 入力 =====
+  let holdTimer = null;
+  function startHold(dir, el){
+    stopHold();
+    el && el.classList.add('on');
+    move(dir);
+    holdTimer = setTimeout(function rep(){ move(dir); holdTimer = setTimeout(rep, 140); }, 300);
+  }
+  function stopHold(){
+    clearTimeout(holdTimer); holdTimer = null;
+    document.querySelectorAll('.dpad button.on').forEach(b => b.classList.remove('on'));
+  }
+  document.querySelectorAll('.dpad button').forEach(b => {
+    b.addEventListener('pointerdown', e => { e.preventDefault(); startHold(b.dataset.dir, b); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, stopHold));
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  const aBtn = document.getElementById('aBtn');
+  aBtn.addEventListener('pointerdown', e => { e.preventDefault(); pressA(); });
+
+  document.getElementById('bookBtn').addEventListener('click', () => { if(!wov.classList.contains('show')) openBook('bloom'); });
+  document.getElementById('setBtn').addEventListener('click', () => { if(!wov.classList.contains('show')) openSettings(); });
+
+  const KEYS = {ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
+  document.addEventListener('keydown', e => {
+    if(e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT'){
+      if(e.key === 'Escape') closeModal();
+      return;
+    }
+    if(e.key === 'Escape'){ if(!watering && wov.classList.contains('show')){ wov.classList.remove('show'); updateHint(); } else closeModal(); return; }
+    if(KEYS[e.key]){ e.preventDefault(); move(KEYS[e.key]); }
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pressA(); }
+  });
+  // iOSのダブルタップズーム防止
+  let lastTouch = 0;
+  document.addEventListener('touchend', e => {
+    const t = Date.now();
+    if(t - lastTouch < 300 && !e.target.closest('textarea,input')) e.preventDefault();
+    lastTouch = t;
+  }, {passive:false});
+
+
+  // ===== 開始 =====
+  if(blocked(pl.x, pl.y) || pl.x >= MW || pl.y >= MH){ pl.x = START.x; pl.y = START.y; }
+  rx = pl.x; ry = pl.y;
+  updateStats(); updateHint();
+  requestAnimationFrame(render);
+  if(!state.seenHelp) openHelp(true);
+})();
+</script>
+</body>
+</html>
